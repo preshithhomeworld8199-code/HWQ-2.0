@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home World | Interior Quotation Software</title>
 <style>
-:root{
+:root{--item-row-height:40px;--item-font-size:13px;
   --pink:#99004f;--gold:#e5c63f;--black:#151515;--muted:#68707a;
   --line:#d9dde2;--soft:#f6f7f9;--green:#147a4b;--red:#c62828;
 }
@@ -40,6 +40,40 @@ th{background:var(--black);color:var(--gold);padding:8px 6px;font-size:11px;whit
 td{border:1px solid var(--line);padding:3px}
 td input,td select{width:100%;border:0;outline:0;padding:7px;background:transparent}
 td.num input{text-align:right}.amount{text-align:right;font-weight:700;white-space:nowrap;padding:7px}
+.unit{min-width:88px;height:32px;padding:6px 8px!important;border:1px solid #cfd4da!important;border-radius:5px!important;background:#fff!important;font-weight:600}
+.table-size-panel{
+  display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px;
+  padding:8px;margin:0 0 8px;border:1px solid var(--line);
+  border-radius:8px;background:var(--soft)
+}
+.size-control{min-width:130px;flex:1}
+.size-control label{
+  display:block;font-size:10px;color:var(--muted);
+  font-weight:700;margin-bottom:3px
+}
+.size-control input[type="range"]{width:100%;accent-color:var(--pink)}
+.size-control span{
+  display:block;text-align:right;font-size:10px;color:#333;font-weight:700
+}
+.size-reset{padding:7px 10px}
+
+.quotation-items{table-layout:fixed}
+.quotation-items .col-sno{width:6%}
+.quotation-items .col-desc{width:34%}
+.quotation-items .col-unit{width:14%}
+.quotation-items .col-qty{width:13%}
+.quotation-items .col-rate{width:13%}
+.quotation-items .col-amount{width:14%}
+.quotation-items .col-action{width:6%}
+.quotation-items th{height:34px;padding:7px 5px}
+.quotation-items td{height:var(--item-row-height);padding:3px}
+.quotation-items td input,.quotation-items td select{min-height:32px}
+.quotation-items .desc{font-size:var(--item-font-size)}
+.quotation-items .num input{font-size:var(--item-font-size)}
+.quotation-items .amount{font-size:var(--item-font-size)}
+@media(max-width:850px){
+  .quotation-items{min-width:760px}
+}
 .actions-cell{white-space:nowrap}
 .small-btn{padding:5px 8px;border-radius:5px;background:#eef1f4}
 .small-btn.del{color:#fff;background:var(--red)}
@@ -108,16 +142,77 @@ td.num input{text-align:right}.amount{text-align:right;font-weight:700;white-spa
 
       <section class="section compact-section" style="margin-top:7px">
         <h3 class="section-title">Scope / Quotation Items</h3>
+
+        <div class="table-size-panel no-print">
+          <div class="size-control">
+            <label for="rowHeightControl">Row Height</label>
+            <input id="rowHeightControl" type="range" min="28" max="70" value="40">
+            <span id="rowHeightValue">40 px</span>
+          </div>
+
+          <div class="size-control">
+            <label for="descWidthControl">Description Width</label>
+            <input id="descWidthControl" type="range" min="20" max="50" value="34">
+            <span id="descWidthValue">34%</span>
+          </div>
+
+          <div class="size-control">
+            <label for="unitWidthControl">Unit Width</label>
+            <input id="unitWidthControl" type="range" min="8" max="22" value="14">
+            <span id="unitWidthValue">14%</span>
+          </div>
+
+          <div class="size-control">
+            <label for="qtyWidthControl">Qty Width</label>
+            <input id="qtyWidthControl" type="range" min="8" max="20" value="13">
+            <span id="qtyWidthValue">13%</span>
+          </div>
+
+          <div class="size-control">
+            <label for="rateWidthControl">Rate Width</label>
+            <input id="rateWidthControl" type="range" min="8" max="20" value="13">
+            <span id="rateWidthValue">13%</span>
+          </div>
+
+          <div class="size-control">
+            <label for="amountWidthControl">Amount Width</label>
+            <input id="amountWidthControl" type="range" min="8" max="22" value="14">
+            <span id="amountWidthValue">14%</span>
+          </div>
+
+          <div class="size-control">
+            <label for="fontSizeControl">Item Text Size</label>
+            <input id="fontSizeControl" type="range" min="11" max="16" value="13">
+            <span id="fontSizeValue">13 px</span>
+          </div>
+
+          <button type="button" class="btn light size-reset" onclick="resetItemTableSize()">Reset Size</button>
+        </div>
+
         <div class="table-wrap">
-          <table id="itemsTable">
+          <table id="itemsTable" class="quotation-items">
+            <colgroup>
+              <col class="col-sno">
+              <col class="col-desc">
+              <col class="col-unit">
+              <col class="col-qty">
+              <col class="col-rate">
+              <col class="col-amount">
+              <col class="col-action">
+            </colgroup>
             <thead><tr>
-              <th style="width:42px">S.No</th><th style="min-width:220px">Description</th><th>Unit</th>
-              <th>Length</th><th>Width</th><th>Qty / SQFT</th><th>Rate</th><th>Amount</th><th class="no-print">Action</th>
+              <th>S.No</th>
+              <th>Description</th>
+              <th>Unit</th>
+              <th>Qty / SQFT</th>
+              <th>Rate</th>
+              <th>Amount</th>
+              <th class="no-print">Action</th>
             </tr></thead>
             <tbody id="itemsBody"></tbody>
           </table>
         </div>
-        <div class="no-print" style="margin-top:8px"><button class="btn light" onclick="addItem()">＋ Add Item</button></div>
+        <div class="no-print" style="margin-top:6px"><button class="btn light" onclick="addItem()">＋ Add Item</button></div>
       </section>
 
       <section class="summary">
@@ -183,8 +278,6 @@ function addItem(item={}){
     <td><input class="sno" readonly></td>
     <td><input class="desc" value="${esc(item.desc||'')}"></td>
     <td><select class="unit"><option>SQFT</option><option>RFT</option><option>Nos</option><option>LS</option><option>Sqm</option><option>Set</option></select></td>
-    <td class="num"><input class="len" type="number" min="0" step=".01" value="${item.len||''}"></td>
-    <td class="num"><input class="wid" type="number" min="0" step=".01" value="${item.wid||''}"></td>
     <td class="num"><input class="qty" type="number" min="0" step=".01" value="${item.qty||''}"></td>
     <td class="num"><input class="rate" type="number" min="0" step=".01" value="${item.rate||''}"></td>
     <td class="amount">₹0.00</td>
@@ -197,11 +290,9 @@ function addItem(item={}){
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function renumber(){document.querySelectorAll('#itemsBody tr').forEach((r,i)=>r.querySelector('.sno').value=i+1)}
 function lineAmount(r){
-  let unit=r.querySelector('.unit').value;
-  let qty=+r.querySelector('.qty').value||0;
-  let len=+r.querySelector('.len').value||0, wid=+r.querySelector('.wid').value||0;
-  if((unit==='SQFT'||unit==='Sqm'||unit==='RFT') && len && wid) qty=len*wid;
-  return qty*(+r.querySelector('.rate').value||0);
+  const qty=+r.querySelector('.qty').value||0;
+  const rate=+r.querySelector('.rate').value||0;
+  return qty*rate;
 }
 function calculate(){
   let sub=0;
@@ -225,7 +316,7 @@ function collect(){
     customer:val('customer'),mobile:val('mobile'),site:val('site'),
     terms:val('terms'),companyAddress:val('companyAddress'),companyPhone:val('companyPhone'),companyGST:val('companyGST'),
     discount:+val('discount')||0,gst:+val('gst')||0,advance:+val('advance')||0,
-    items:[...document.querySelectorAll('#itemsBody tr')].map(r=>({desc:r.querySelector('.desc').value,unit:r.querySelector('.unit').value,len:r.querySelector('.len').value,wid:r.querySelector('.wid').value,qty:r.querySelector('.qty').value,rate:r.querySelector('.rate').value}))
+    items:[...document.querySelectorAll('#itemsBody tr')].map(r=>({desc:r.querySelector('.desc').value,unit:r.querySelector('.unit').value,qty:r.querySelector('.qty').value,rate:r.querySelector('.rate').value}))
   };
 }
 function saveQuotation(){
@@ -257,7 +348,67 @@ function importData(e){
   r.onload=()=>{try{let incoming=JSON.parse(r.result);if(!Array.isArray(incoming))throw Error();localStorage.setItem('hw_quotes',JSON.stringify(incoming));renderHistory();alert('Backup imported.')}catch{alert('Invalid quotation backup file.')}};
   r.readAsText(file);e.target.value='';
 }
+function setTableSize(){
+  const rowHeight = Number($('rowHeightControl').value);
+  const desc = Number($('descWidthControl').value);
+  const unit = Number($('unitWidthControl').value);
+  const qty = Number($('qtyWidthControl').value);
+  const rate = Number($('rateWidthControl').value);
+  const amount = Number($('amountWidthControl').value);
+  const font = Number($('fontSizeControl').value);
+
+  // Keep S.No and Action fixed at 6% each and scale the editable columns.
+  const editableTotal = desc + unit + qty + rate + amount;
+  const available = 88; // 100 - S.No 6 - Action 6
+  const scale = available / editableTotal;
+
+  const descW = desc * scale;
+  const unitW = unit * scale;
+  const qtyW = qty * scale;
+  const rateW = rate * scale;
+  const amountW = amount * scale;
+
+  document.documentElement.style.setProperty('--item-row-height', rowHeight + 'px');
+  document.documentElement.style.setProperty('--item-font-size', font + 'px');
+
+  const cols = document.querySelectorAll('#itemsTable col');
+  if(cols.length >= 7){
+    cols[0].style.width = '6%';
+    cols[1].style.width = descW + '%';
+    cols[2].style.width = unitW + '%';
+    cols[3].style.width = qtyW + '%';
+    cols[4].style.width = rateW + '%';
+    cols[5].style.width = amountW + '%';
+    cols[6].style.width = '6%';
+  }
+
+  $('rowHeightValue').textContent = rowHeight + ' px';
+  $('descWidthValue').textContent = Math.round(descW) + '%';
+  $('unitWidthValue').textContent = Math.round(unitW) + '%';
+  $('qtyWidthValue').textContent = Math.round(qtyW) + '%';
+  $('rateWidthValue').textContent = Math.round(rateW) + '%';
+  $('amountWidthValue').textContent = Math.round(amountW) + '%';
+  $('fontSizeValue').textContent = font + ' px';
+}
+
+function resetItemTableSize(){
+  $('rowHeightControl').value = 40;
+  $('descWidthControl').value = 34;
+  $('unitWidthControl').value = 14;
+  $('qtyWidthControl').value = 13;
+  $('rateWidthControl').value = 13;
+  $('amountWidthControl').value = 14;
+  $('fontSizeControl').value = 13;
+  setTableSize();
+}
+
+[
+  'rowHeightControl','descWidthControl','unitWidthControl','qtyWidthControl',
+  'rateWidthControl','amountWidthControl','fontSizeControl'
+].forEach(id => $(id).addEventListener('input', setTableSize));
+
 $('quoteNo').addEventListener('change',()=>{});
+setTableSize();
 newQuotation();renderHistory();
 </script>
 </body>

@@ -646,6 +646,51 @@ function lineAmount(r){
   const rate=+r.querySelector('.rate').value||0;
   return qty*rate;
 }
+/* ===== Keyboard box navigation =====
+   Enter = next editable box
+   Backspace on an empty box = previous editable box
+   Shift+Enter = normal Enter/new line in textareas
+===== */
+function getEditableBoxes(){
+  return [...document.querySelectorAll('input, select, textarea')].filter(el=>{
+    if(el.disabled || el.readOnly) return false;
+    if(el.type === 'hidden') return false;
+    if(el.offsetParent === null) return false;
+    return true;
+  });
+}
+
+function focusBox(index){
+  const boxes=getEditableBoxes();
+  if(index<0 || index>=boxes.length) return;
+  const el=boxes[index];
+  el.focus();
+  if(typeof el.select === 'function' && el.tagName !== 'SELECT') el.select();
+}
+
+document.addEventListener('keydown', function(e){
+  const target=e.target;
+  if(!target || !target.matches('input, select, textarea')) return;
+
+  const boxes=getEditableBoxes();
+  const index=boxes.indexOf(target);
+  if(index<0) return;
+
+  // Enter moves to the next editable box. Shift+Enter keeps normal textarea behaviour.
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    focusBox(index + 1);
+    return;
+  }
+
+  // Backspace moves to the previous box only when the current box is empty.
+  // This keeps normal Backspace text deletion working while typing.
+  if(e.key === 'Backspace' && target.value === ''){
+    e.preventDefault();
+    focusBox(index - 1);
+  }
+});
+
 function calculate(){
   let sub=0;
   document.querySelectorAll('#itemsBody tr').forEach(r=>{let a=lineAmount(r);r.querySelector('.amount').textContent=money(a);sub+=a});

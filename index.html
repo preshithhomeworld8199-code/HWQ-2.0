@@ -588,13 +588,39 @@ const val=id=>$(id)?.value||"";
 const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 let currentId=null;
 
+
+function makeId(){
+  return 'HWQ-' + Date.now().toString(36) + '-' +
+    Math.random().toString(36).slice(2,8);
+}
+function setStatus(message, ok=true){
+  let el=$('saveStatus');
+  if(!el){
+    el=document.createElement('div');
+    el.id='saveStatus';
+    el.style.cssText='position:fixed;right:18px;bottom:18px;z-index:9999;padding:10px 14px;border-radius:8px;background:#151515;color:#fff;font-weight:700;box-shadow:0 4px 16px #0002;';
+    document.body.appendChild(el);
+  }
+  el.textContent=message;
+  el.style.background=ok?'#147a4b':'#c62828';
+  clearTimeout(window.__hwStatusTimer);
+  window.__hwStatusTimer=setTimeout(()=>{ if(el) el.remove(); },3500);
+}
+
 function dateISO(d){return new Date(d).toISOString().slice(0,10)}
 function addDays(date,days){let d=new Date(date);d.setDate(d.getDate()+days);return dateISO(d)}
 function nextNo(){
-  const arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]');
+  let arr; try{arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]'); if(!Array.isArray(arr))arr=[];}catch{arr=[];}
   const year=new Date().getFullYear();
-  let max=0; arr.forEach(q=>{let m=String(q.quoteNo||'').match(/(\\d+)$/);if(m)max=Math.max(max,+m[1])});
-  return `HW/${year}/${String(max+1).padStart(4,'0')}`;
+  const key=`hw_quote_seq_${year}`;
+  let max=Number(localStorage.getItem(key)||0);
+  arr.forEach(q=>{
+    const m=String(q.quoteNo||'').match(new RegExp(`^HW/${year}/(\d+)$`,'i'));
+    if(m) max=Math.max(max,Number(m[1]));
+  });
+  max++;
+  localStorage.setItem(key,String(max));
+  return `HW/${year}/${String(max).padStart(4,'0')}`;
 }
 function addItem(item={}){
   const tr=document.createElement('tr');
@@ -646,7 +672,7 @@ function collect(){
 function saveQuotation(){
   if(!val('customer').trim()){setStatus('Customer name is required before saving.',false);alert('Please enter Customer Name.');$('customer').focus();return}
   if(!val('quoteNo')){setStatus('Quotation number could not be generated.',false);alert('Quotation number is missing. Click New Quotation.');return}
-  const q=collect(),arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]'),i=arr.findIndex(x=>x.id===q.id);
+  const q=collect(); if(!q.id) q.id=makeId(); currentId=q.id; const arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]'),i=arr.findIndex(x=>x.id===q.id);
   if(i>=0)arr[i]=q;else arr.unshift(q);
   currentId=q.id;
   const year=new Date(q.quoteDate||Date.now()).getFullYear();
@@ -744,6 +770,10 @@ function resetItemTableSize(){
 ].forEach(id => $(id).addEventListener('input', setTableSize));
 
 setTableSize();
+try{
+  const raw=localStorage.getItem('hw_quotes');
+  if(raw && !Array.isArray(JSON.parse(raw))) localStorage.setItem('hw_quotes','[]');
+}catch{localStorage.setItem('hw_quotes','[]');}
 newQuotation();renderHistory();
 </script>
 </body>

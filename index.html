@@ -425,6 +425,8 @@ button:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,23,42,.12)
 <div class="app">
   <div class="toolbar no-print">
     <button class="btn pink" onclick="newQuotation()">＋ New Quotation</button>
+     <button class="btn light" onclick="undoQuotation()">↶ Undo Quotation</button>
+     <button class="btn light" onclick="viewPreviousQuotation()">📋 View Previous</button>
     <button class="btn green" onclick="saveQuotation()">💾 Save</button>
     <button class="btn" onclick="window.print()">🖨 Print / PDF</button>
     <button class="btn light" onclick="exportData()">⬇ Export</button>
@@ -669,9 +671,32 @@ function collect(){
     items:[...document.querySelectorAll('#itemsBody tr')].map(r=>({desc:r.querySelector('.desc').value,unit:r.querySelector('.unit').value,qty:r.querySelector('.qty').value,rate:r.querySelector('.rate').value}))
   };
 }
+
+function loadQuotationData(q){
+  currentId=q.id||makeId();
+  const fields=['quoteNo','quoteDate','validity','customerName','customerPhone','customerEmail','siteAddress','salesPerson','notes','discount','taxRate','terms'];
+  fields.forEach(k=>{ if($(k)) $(k).value=q[k]??''; });
+  const tbody=$('itemsBody');
+  if(tbody){
+    tbody.innerHTML='';
+    (q.items||[]).forEach(item=>{
+      addItem();
+      const row=tbody.lastElementChild;
+      if(!row) return;
+      ['desc','unit','qty','rate'].forEach(k=>{
+        const el=row.querySelector('[data-field="'+k+'"]');
+        if(el) el.value=item[k]??'';
+      });
+    });
+    if(!q.items||!q.items.length) addItem();
+  }
+  calc();
+}
+
 function saveQuotation(){
   if(!val('customer').trim()){setStatus('Customer name is required before saving.',false);alert('Please enter Customer Name.');$('customer').focus();return}
   if(!val('quoteNo')){setStatus('Quotation number could not be generated.',false);alert('Quotation number is missing. Click New Quotation.');return}
+  window.__hwLastSaved = JSON.parse(JSON.stringify(collect()));
   const q=collect(); if(!q.id) q.id=makeId(); currentId=q.id; const arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]'),i=arr.findIndex(x=>x.id===q.id);
   if(i>=0)arr[i]=q;else arr.unshift(q);
   currentId=q.id;
@@ -686,6 +711,44 @@ function loadQuotation(id){
   ['quoteNo','quoteDate','customer','mobile','site','terms','companyAddress','companyPhone','companyGST','discount','gst','advance'].forEach(id=>{if(q[id]!==undefined)$(id).value=q[id]});
   $('itemsBody').innerHTML='';(q.items||[]).forEach(addItem);if(!q.items?.length)for(let i=0;i<5;i++)addItem();calculate();setStatus(`${q.quoteNo} loaded for editing.`);window.scrollTo({top:0,behavior:'smooth'});
 }
+
+function undoQuotation(){
+  if(!window.__hwLastSaved){
+    setStatus('Nothing to undo yet', false);
+    return;
+  }
+  if(!confirm('Undo the last saved quotation? This will restore the previous quotation data on screen.')) return;
+  loadQuotationData(window.__hwLastSaved);
+  setStatus('Last saved quotation restored');
+}
+
+function viewPreviousQuotation(){
+  let arr;
+  try{
+    arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]');
+    if(!Array.isArray(arr)) arr=[];
+  }catch{ arr=[]; }
+  if(!arr.length){
+    setStatus('No previous quotations found', false);
+    return;
+  }
+
+  const sorted=[...arr].sort((a,b)=>{
+    const da=new Date(a.updatedAt||a.createdAt||0).getTime();
+    const db=new Date(b.updatedAt||b.createdAt||0).getTime();
+    return db-da;
+  });
+
+  const previous=sorted.find(q=>q.id!==currentId) || sorted[0];
+  if(!previous){
+    setStatus('No previous quotation found', false);
+    return;
+  }
+
+  loadQuotationData(previous);
+  setStatus('Previous quotation loaded: '+(previous.quoteNo||'Quotation'));
+}
+
 function deleteQuotation(){
   if(!currentId){alert('Save the quotation first to delete it.');return}
   if(!confirm('Delete this saved quotation?'))return;

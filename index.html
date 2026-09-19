@@ -427,6 +427,7 @@ button:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,23,42,.12)
     <button class="btn pink" onclick="newQuotation()">＋ New Quotation</button>
      <button class="btn light" onclick="undoQuotation()">↶ Undo Quotation</button>
      <button class="btn light" onclick="viewPreviousQuotation()">📋 View Previous</button>
+    <button class="btn light" onclick="editQuotationNumber()">✎ Edit Quotation No.</button>
     <button class="btn green" onclick="saveQuotation()">💾 Save</button>
     <button class="btn" onclick="window.print()">🖨 Print / PDF</button>
     <button class="btn light" onclick="exportData()">⬇ Export</button>
@@ -611,19 +612,24 @@ function setStatus(message, ok=true){
 
 function dateISO(d){return new Date(d).toISOString().slice(0,10)}
 function addDays(date,days){let d=new Date(date);d.setDate(d.getDate()+days);return dateISO(d)}
-function nextNo(){
-  let arr; try{arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]'); if(!Array.isArray(arr))arr=[];}catch{arr=[];}
+
+function peekNextNo(){
+  let arr=[];
+  try{
+    const v=JSON.parse(localStorage.getItem('hw_quotes')||'[]');
+    if(Array.isArray(v)) arr=v;
+  }catch{}
   const year=new Date().getFullYear();
   const key=`hw_quote_seq_${year}`;
   let max=Number(localStorage.getItem(key)||0);
   arr.forEach(q=>{
-    const m=String(q.quoteNo||'').match(new RegExp(`^HW/${year}/(\d+)$`,'i'));
+    const m=String(q.quoteNo||'').match(new RegExp(`^HW/${year}/(\\d+)$`,'i'));
     if(m) max=Math.max(max,Number(m[1]));
   });
-  max++;
-  localStorage.setItem(key,String(max));
-  return `HW/${year}/${String(max).padStart(4,'0')}`;
+  return `HW/${year}/${String(max+1).padStart(4,'0')}`;
 }
+
+function nextNo(){ return peekNextNo(); }
 function addItem(item={}){
   const tr=document.createElement('tr');
   tr.innerHTML=`
@@ -646,51 +652,6 @@ function lineAmount(r){
   const rate=+r.querySelector('.rate').value||0;
   return qty*rate;
 }
-/* ===== Keyboard box navigation =====
-   Enter = next editable box
-   Backspace on an empty box = previous editable box
-   Shift+Enter = normal Enter/new line in textareas
-===== */
-function getEditableBoxes(){
-  return [...document.querySelectorAll('input, select, textarea')].filter(el=>{
-    if(el.disabled || el.readOnly) return false;
-    if(el.type === 'hidden') return false;
-    if(el.offsetParent === null) return false;
-    return true;
-  });
-}
-
-function focusBox(index){
-  const boxes=getEditableBoxes();
-  if(index<0 || index>=boxes.length) return;
-  const el=boxes[index];
-  el.focus();
-  if(typeof el.select === 'function' && el.tagName !== 'SELECT') el.select();
-}
-
-document.addEventListener('keydown', function(e){
-  const target=e.target;
-  if(!target || !target.matches('input, select, textarea')) return;
-
-  const boxes=getEditableBoxes();
-  const index=boxes.indexOf(target);
-  if(index<0) return;
-
-  // Enter moves to the next editable box. Shift+Enter keeps normal textarea behaviour.
-  if(e.key === 'Enter' && !e.shiftKey){
-    e.preventDefault();
-    focusBox(index + 1);
-    return;
-  }
-
-  // Backspace moves to the previous box only when the current box is empty.
-  // This keeps normal Backspace text deletion working while typing.
-  if(e.key === 'Backspace' && target.value === ''){
-    e.preventDefault();
-    focusBox(index - 1);
-  }
-});
-
 function calculate(){
   let sub=0;
   document.querySelectorAll('#itemsBody tr').forEach(r=>{let a=lineAmount(r);r.querySelector('.amount').textContent=money(a);sub+=a});
@@ -738,11 +699,82 @@ function loadQuotationData(q){
   calc();
 }
 
+
+function reserveNextNo(){
+  let arr=[];
+  try{
+    const v=JSON.parse(localStorage.getItem('hw_quotes')||'[]');
+    if(Array.isArray(v)) arr=v;
+  }catch{}
+  const year=new Date().getFullYear();
+  const key=`hw_quote_seq_${year}`;
+  let max=Number(localStorage.getItem(key)||0);
+  arr.forEach(q=>{
+    const m=String(q.quoteNo||'').match(new RegExp(`^HW/${year}/(\\d+)$`,'i'));
+    if(m) max=Math.max(max,Number(m[1]));
+  });
+  max++;
+  localStorage.setItem(key,String(max));
+  return `HW/${year}/${String(max).padStart(4,'0')}`;
+}
+
+
+function editQuotationNumber() {
+  const field = document.getElementById('quotationNo');
+  if (!field) {
+    alert('Quotation number field was not found.');
+    return;
+  }
+
+  const current = field.value || '';
+  const entered = prompt('Enter the quotation number:', current);
+
+  if (entered === null) return;
+
+  const value = entered.trim();
+  if (!value) {
+    alert('Quotation number cannot be empty.');
+    return;
+  }
+
+  // Keep quotation numbers readable and safe for localStorage.
+  if (!/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/.test(value)) {
+    alert('Use only letters, numbers, spaces are not allowed, and these symbols: . / - _');
+    return;
+  }
+
+  field.value = value;
+
+  // Mark as manually edited so saveQuotation() keeps this number.
+  window.__hwManualQuotationNo = value;
+  if (typeof setStatus === 'function') {
+    setStatus('Quotation number changed to ' + value + '. Save the quotation to keep it.');
+  }
+}
+
 function saveQuotation(){
+  // Respect a manually entered quotation number.
+  const manualQuotationNo = window.__hwManualQuotationNo;
+  if (manualQuotationNo) {
+    const quotationNoField = document.getElementById('quotationNo');
+    if (quotationNoField) quotationNoField.value = manualQuotationNo;
+  }
+
   if(!val('customer').trim()){setStatus('Customer name is required before saving.',false);alert('Please enter Customer Name.');$('customer').focus();return}
   if(!val('quoteNo')){setStatus('Quotation number could not be generated.',false);alert('Quotation number is missing. Click New Quotation.');return}
   window.__hwLastSaved = JSON.parse(JSON.stringify(collect()));
-  const q=collect(); if(!q.id) q.id=makeId(); currentId=q.id; const arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]'),i=arr.findIndex(x=>x.id===q.id);
+  const q=collect();
+  let savedArr=[];
+  try{
+    const v=JSON.parse(localStorage.getItem('hw_quotes')||'[]');
+    if(Array.isArray(v)) savedArr=v;
+  }catch{}
+  const isExisting=savedArr.some(x=>x.id===q.id);
+  if(!isExisting){
+    q.quoteNo=reserveNextNo();
+    if($('quoteNo')) $('quoteNo').value=q.quoteNo;
+  }
+ if(!q.id) q.id=makeId(); currentId=q.id; const arr=JSON.parse(localStorage.getItem('hw_quotes')||'[]'),i=arr.findIndex(x=>x.id===q.id);
   if(i>=0)arr[i]=q;else arr.unshift(q);
   currentId=q.id;
   const year=new Date(q.quoteDate||Date.now()).getFullYear();

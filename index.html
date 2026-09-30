@@ -419,6 +419,53 @@ button:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,23,42,.12)
   }
 }
 
+
+/* FULL TERMS & CONDITIONS PRINT FIX */
+@media print {
+  .terms, .terms-conditions, .termsConditions, #terms, #termsConditions,
+  textarea[name="terms"], textarea[id*="term" i], textarea[class*="term" i] {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  textarea {
+    overflow: visible !important;
+    resize: none !important;
+  }
+  .terms-section, .terms-box, .terms-container, .quotation-terms, .print-terms {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  .terms li, .terms-conditions li, #terms li, #termsConditions li {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+
+/* DEFAULT 5 TERMS PRINT */
+@media print {
+  textarea[name="terms"],
+  textarea[id*="term" i],
+  textarea[class*="term" i],
+  #terms,
+  #termsConditions {
+    height: auto !important;
+    min-height: 95px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    display: block !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -916,5 +963,72 @@ try{
 }catch{localStorage.setItem('hw_quotes','[]');}
 newQuotation();renderHistory();
 </script>
+
+<script>
+(function(){
+  function expandTermsForPrint(){
+    var sels=[
+      'textarea[name="terms"]','textarea[id*="term" i]',
+      'textarea[class*="term" i]','#terms','#termsConditions'
+    ];
+    sels.forEach(function(s){
+      document.querySelectorAll(s).forEach(function(el){
+        if(el.tagName.toLowerCase() !== 'textarea') return;
+        el.style.height='auto';
+        el.style.maxHeight='none';
+        el.style.overflow='visible';
+        el.style.whiteSpace='pre-wrap';
+        el.style.height=Math.max(el.scrollHeight,30)+'px';
+      });
+    });
+  }
+  window.addEventListener('beforeprint',expandTermsForPrint);
+})();
+</script>
+
+
+<script>
+(function () {
+  const HOME_WORLD_DEFAULT_TERMS = [
+    "1. Prices are subject to applicable taxes and are valid for the period mentioned in this quotation.",
+    "2. Delivery time will be as mutually agreed and may vary depending on product availability.",
+    "3. Payment shall be made as per the agreed payment terms mentioned in the quotation.",
+    "4. Goods once ordered cannot be cancelled or returned except with prior approval and subject to supplier terms.",
+    "5. Any applicable warranty is subject to the manufacturer's warranty terms and conditions."
+  ];
+
+  function setDefaultQuotationTerms() {
+    const selectors = [
+      'textarea[name="terms"]',
+      'textarea[id*="term" i]',
+      'textarea[class*="term" i]',
+      '#terms',
+      '#termsConditions'
+    ];
+
+    let found = false;
+    selectors.forEach(function (selector) {
+      document.querySelectorAll(selector).forEach(function (el) {
+        if (el.tagName.toLowerCase() === 'textarea') {
+          found = true;
+          if (!el.value.trim()) {
+            el.value = HOME_WORLD_DEFAULT_TERMS.join("\n");
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      });
+    });
+
+    return found;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setDefaultQuotationTerms();
+    setTimeout(setDefaultQuotationTerms, 100);
+  });
+})();
+</script>
+
 </body>
 </html>

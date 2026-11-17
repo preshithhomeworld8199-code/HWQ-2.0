@@ -71,8 +71,11 @@ td.num input{text-align:right}.amount{text-align:right;font-weight:700;white-spa
 .quotation-items .col-action{width:6%}
 .quotation-items th{height:34px;padding:7px 5px}
 .quotation-items td{height:var(--item-row-height);padding:3px}
-.quotation-items td input,.quotation-items td select{min-height:32px}
+.quotation-items td input,.quotation-items td select,.quotation-items td textarea{min-height:32px}
 .quotation-items .desc{font-size:var(--item-font-size)}
+.quotation-items td textarea.desc{display:block;width:100%;min-height:32px;height:32px;resize:none;overflow:hidden;border:0;outline:0;padding:7px;background:transparent;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}
+.quotation-items td textarea.desc{color:#000!important}
+.quotation-items td textarea.desc::placeholder{color:#000;opacity:1}
 .quotation-items .num input{font-size:var(--item-font-size)}
 .quotation-items .amount{font-size:var(--item-font-size)}
 @media(max-width:850px){
@@ -466,6 +469,32 @@ button:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,23,42,.12)
   }
 }
 
+
+/* ALL QUOTATION TABLE COLUMN TEXT IN BLACK */
+.quotation-items td,
+.quotation-items td input,
+.quotation-items td select,
+.quotation-items td textarea,
+.quotation-items td .amount,
+.quotation-items td span {
+  color: #000 !important;
+}
+.quotation-items td input::placeholder,
+.quotation-items td textarea::placeholder {
+  color: #000 !important;
+  opacity: 1 !important;
+}
+@media print {
+  .quotation-items td,
+  .quotation-items td input,
+  .quotation-items td select,
+  .quotation-items td textarea,
+  .quotation-items td .amount,
+  .quotation-items td span {
+    color: #000 !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -681,7 +710,7 @@ function addItem(item={}){
   const tr=document.createElement('tr');
   tr.innerHTML=`
     <td><input class="sno" readonly></td>
-    <td><input class="desc" value="${esc(item.desc||'')}"></td>
+    <td><textarea class="desc" rows="1" aria-label="Description. Press Ctrl+Enter to add another line in this same description box." placeholder="Description (Ctrl+Enter for new line)">${esc(item.desc||'')}</textarea></td>
     <td><select class="unit"><option>SQFT</option><option>RFT</option><option>Nos</option><option>LS</option><option>Sqm</option><option>Set</option></select></td>
     <td class="num"><input class="qty" type="number" min="0" step=".01" value="${item.qty||''}"></td>
     <td class="num"><input class="rate" type="number" min="0" step=".01" value="${item.rate||''}"></td>
@@ -689,8 +718,22 @@ function addItem(item={}){
     <td class="actions-cell no-print"><button class="small-btn del" type="button">✕</button></td>`;
   tr.querySelector('.unit').value=item.unit||'SQFT';
   tr.querySelector('.del').onclick=()=>{tr.remove();renumber();calculate()};
+  const desc=tr.querySelector('.desc');
+  const resizeDescription=()=>{
+    desc.style.height='32px';
+    desc.style.height=Math.max(32,desc.scrollHeight)+'px';
+  };
+  desc.addEventListener('input',()=>{resizeDescription();calculate()});
+  desc.addEventListener('keydown',e=>{
+    if(e.key==='Enter' && e.ctrlKey){
+      e.preventDefault();
+      const start=desc.selectionStart, end=desc.selectionEnd;
+      desc.setRangeText('\n',start,end,'end');
+      desc.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+  });
   tr.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',calculate));
-  $('itemsBody').appendChild(tr);renumber();calculate();
+  $('itemsBody').appendChild(tr);resizeDescription();renumber();calculate();
 }
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function renumber(){document.querySelectorAll('#itemsBody tr').forEach((r,i)=>r.querySelector('.sno').value=i+1)}
